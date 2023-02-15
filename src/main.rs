@@ -1,38 +1,62 @@
-#![deny(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+#![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 
-mod message;
+mod cmd_defs;
+mod handler;
+mod levels;
+mod minicache;
+mod processor;
+mod render_card;
+mod toy;
 
 use futures::StreamExt;
+use render_card::SvgState;
 use sqlx::PgPool;
 use std::sync::Arc;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use twilight_gateway::{
     stream::ShardEventStream, CloseFrame, Config, Event, Intents, MessageSender, Shard,
 };
+use twilight_model::id::{marker::ApplicationMarker, Id};
+
+#[macro_use]
+extern crate tracing;
+#[macro_use]
+extern crate sqlx;
+
+const THEME_COLOR: u32 = 0x33_33_66;
 
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::EnvFilter::from_env("LOG"))
+        .init();
     let token =
-        std::env::var("DISCORD_TOKEN").expect("Failed to get DISCORD_TOKEN environment variable");
-    let redis_url =
-        std::env::var("REDIS_URL").expect("Failed to get REDIS_URL environment variable");
-    let pg =
-        std::env::var("DATABASE_URL").expect("Failed to get DATABASE_URL environment variable");
-    println!("Connecting to database {pg}");
-    let db = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(50)
-        .connect(&pg)
+        std::env::var("DISCORD_TOKEN").expect("Expected environment variable DISCORD_TOKEN");
+    let database_url =
+        std::env::var("DATABASE_URL").expect("Expected environment variable DATABASE_URL");
+    println!("Connecting to database {database_url}");
+    let db = PgPool::connect(&database_url)
         .await
-        .expect("Failed to connect to database");
-
-    sqlx::migrate!("../migrations")
+        .expect("Failed to connect to the database!");
+    sqlx::migrate!()
         .run(&db)
         .await
         .expect("Failed to run database migrations!");
-    let redis_cfg = deadpool_redis::Config::from_url(redis_url);
-    let redis = redis_cfg
-        .create_pool(Some(deadpool_redis::Runtime::Tokio1))
-        .expect("Failed to connect to redis");
+    let client = Arc::new(twilight_http::Client::new(token));
+    println!("Creating commands...");
+    let my_id = client
+        .current_user_application()
+        .await
+        .expect("Failed to get own app ID!")
+        .model()
+        .await
+        .expect("Failed to convert own app ID!")
+        .id;
+    cmd_defs::register(client.interaction(my_id)).await;
+    let http = reqwest::Client::new();
+    let svg = SvgState::new();
 
     let client = twilight_http::Client::new(token.clone());
     let intents = Intents::GUILD_MESSAGES;
@@ -92,16 +116,12 @@ async fn handle_event(
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("SQL error: {0}")]
-    Sqlx(#[from] sqlx::Error),
-    #[error("Redis error: {0}")]
-    Redis(#[from] redis::RedisError),
-    #[error("Discord error: {0}")]
-    Twilight(#[from] twilight_http::Error),
-    #[error("JSON error: {0}")]
-    SerdeJson(#[from] serde_json::Error),
-    #[error("Send error: {0}")]
-    TwilightCommand(#[from] twilight_gateway::error::SendError),
+#[derive(Clone)]
+pub struct AppState {
+    pub db: PgPool,
+    pub pubkey: Arc<String>,
+    pub client: Arc<twilight_http::Client>,
+    pub my_id: Id<ApplicationMarker>,
+    pub svg: SvgState,
+    pub http: reqwest::Client,
 }

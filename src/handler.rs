@@ -12,10 +12,13 @@ pub async fn handle(
     headers: HeaderMap,
     State(state): State<AppState>,
     body: Bytes,
-) -> Result<axum::Json<InteractionResponse>, Error> {
+) -> Result<(), Error> {
     let body = body.to_vec();
-    crate::discord_sig_validation::validate_discord_sig(&headers, &body, &state.pubkey)?;
     let interaction: Interaction = serde_json::from_slice(&body)?;
+    let my_id = state.my_id;
+    let client = state.client.clone();
+    let interaction_token = interaction.token.clone();
+    let interaction_id = interaction.id.clone();
     let response = match crate::processor::process(interaction, state).await {
         Ok(val) => val,
         Err(e) => {
@@ -31,22 +34,17 @@ pub async fn handle(
             }
         }
     };
-    Ok(Json(response))
+    client
+        .interaction(my_id)
+        .create_response(interaction_id, &interaction_token, &response)
+        .await?;
+    Ok(())
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Signature validation error: {0}")]
-    Validation(#[from] crate::discord_sig_validation::SignatureValidationError),
+    #[error("serde_json validation error: {0}")]
+    Http(#[from] twilight_http::Error),
     #[error("serde_json validation error: {0}")]
     SerdeJson(#[from] serde_json::Error),
-}
-
-impl IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        error!("{self}");
-        axum::response::Response::builder()
-            .body(axum::body::boxed(axum::body::Full::from(self.to_string())))
-            .unwrap()
-    }
 }
