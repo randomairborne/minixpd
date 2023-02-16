@@ -75,7 +75,9 @@ async fn main() {
             .expect("Failed to listen to ctrl-c");
         info!("Shutting down...");
         for shard in shard_closers {
-            shard.close(CloseFrame::NORMAL).expect("Failed to close shard`");
+            shard
+                .close(CloseFrame::NORMAL)
+                .expect("Failed to close shard`");
         }
     });
     let mut events = ShardEventStream::new(shards.iter_mut());
