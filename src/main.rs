@@ -2,6 +2,7 @@
 
 mod cmd_defs;
 mod handler;
+mod leaderboard;
 mod levels;
 mod message;
 mod minicache;
@@ -9,14 +10,12 @@ mod processor;
 mod render_card;
 mod toy;
 
-use futures::StreamExt;
 use render_card::SvgState;
 use sqlx::PgPool;
-use std::sync::Arc;
+use std::sync::{atomic::AtomicBool, Arc};
+use tokio::task::JoinSet;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
-use twilight_gateway::{
-    stream::ShardEventStream, CloseFrame, Config, Event, Intents, MessageSender, Shard,
-};
+use twilight_gateway::{CloseFrame, Config, Event, Intents, Shard};
 use twilight_model::id::{marker::ApplicationMarker, Id};
 
 #[macro_use]
@@ -63,24 +62,11 @@ async fn main() {
     let intents = Intents::GUILD_MESSAGES;
     let config = Config::new(token, intents);
     let cooldowns = minicache::MessagingCache::new();
-    let mut shards: Vec<Shard> =
+    let shards: Vec<Shard> =
         twilight_gateway::stream::create_recommended(&client, config, |_, builder| builder.build())
             .await
             .expect("Failed to create reccomended shard count")
             .collect();
-    let shard_closers: Vec<MessageSender> = shards.iter().map(Shard::sender).collect();
-    tokio::spawn(async move {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to listen to ctrl-c");
-        info!("Shutting down...");
-        for shard in shard_closers {
-            shard
-                .close(CloseFrame::NORMAL)
-                .expect("Failed to close shard`");
-        }
-    });
-    let mut events = ShardEventStream::new(shards.iter_mut());
     info!("Connecting to discord");
     let state = AppState {
         db,
@@ -89,8 +75,29 @@ async fn main() {
         cooldowns,
         svg,
     };
-    while let Some((_shard, event_result)) = events.next().await {
-        match event_result {
+    let should_shutdown = Arc::new(AtomicBool::new(false));
+
+    let mut set = JoinSet::new();
+
+    for shard in shards {
+        set.spawn(event_loop(shard, should_shutdown.clone(), state.clone()));
+    }
+
+    tokio::signal::ctrl_c().await.unwrap();
+
+    info!("Shutting down..");
+
+    // Instruct the shards to shutdown.
+    should_shutdown.store(true, std::sync::atomic::Ordering::Relaxed);
+
+    // Await all tasks to complete.
+    while set.join_next().await.is_some() {}
+    info!("Done, see ya!");
+}
+
+async fn event_loop(mut shard: Shard, should_shutdown: Arc<AtomicBool>, state: AppState) {
+    loop {
+        match shard.next_event().await {
             Ok(event) => {
                 let state = state.clone();
                 tokio::spawn(async move {
@@ -101,8 +108,12 @@ async fn main() {
             }
             Err(e) => error!("Shard loop error: {e}"),
         }
+        if should_shutdown.load(std::sync::atomic::Ordering::Relaxed) {
+            // We're shutting down either way, errors don't matter.
+            _ = shard.close(CloseFrame::NORMAL).await;
+            break;
+        }
     }
-    info!("Done, see ya!");
 }
 
 async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {
@@ -140,6 +151,12 @@ pub enum Error {
     NoInteractionData,
     #[error("Discord did not send a guild ID!")]
     NoGuildId,
+    #[error("Discord did not send a parent message for button!")]
+    NoParentMessage,
+    #[error("Discord sent unknown custom button ID!")]
+    InvalidCustomButtonId,
+    #[error("Failed to validate message: {0}!")]
+    ValidateMessage(#[from] twilight_validate::message::MessageValidationError),
     #[error("Interaction parser encountered an error: {0}!")]
     Parse(#[from] twilight_interactions::error::ParseError),
     #[error("SVG renderer encountered an error: {0}!")]

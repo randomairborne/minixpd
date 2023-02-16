@@ -1,10 +1,7 @@
 use crate::{AppState, Error};
 
 use twilight_model::{
-    channel::message::{
-        component::{Button, ButtonStyle},
-        Component, MessageFlags, ReactionType,
-    },
+    channel::message::MessageFlags,
     http::{
         attachment::Attachment,
         interaction::{InteractionResponse, InteractionResponseType},
@@ -155,56 +152,6 @@ async fn generate_level_response(
     Ok(InteractionResponse {
         kind: InteractionResponseType::DeferredChannelMessageWithSource,
         data: None,
-    })
-}
-
-pub async fn leaderboard(
-    guild_id: Id<GuildMarker>,
-    db: sqlx::PgPool,
-) -> Result<InteractionResponse, Error> {
-    #[allow(clippy::cast_possible_wrap)]
-    let users = query!(
-        "SELECT * FROM levels WHERE guild = $1 ORDER BY xp LIMIT 10",
-        guild_id.get() as i64
-    )
-    .fetch_all(&db)
-    .await?;
-    let mut description = String::with_capacity(users.len() * 128);
-    #[allow(clippy::cast_sign_loss)]
-    for user in users {
-        description += &format!("<@{}>\n", user.id as u64);
-    }
-    let embed = EmbedBuilder::new()
-        .description(description)
-        .color(crate::THEME_COLOR)
-        .build();
-    let back_button = Component::Button(Button {
-        custom_id: Some("back_button".to_string()),
-        disabled: true,
-        emoji: Some(ReactionType::Unicode {
-            name: "⬅".to_string(),
-        }),
-        label: Some("Previous".to_string()),
-        style: ButtonStyle::Primary,
-        url: None,
-    });
-    let forward_button = Component::Button(Button {
-        custom_id: Some("forward_button".to_string()),
-        disabled: true,
-        emoji: Some(ReactionType::Unicode {
-            name: "➡️".to_string(),
-        }),
-        label: Some("Next".to_string()),
-        style: ButtonStyle::Primary,
-        url: None,
-    });
-    let data = InteractionResponseDataBuilder::new()
-        .embeds([embed])
-        .components([forward_button, back_button])
-        .build();
-    Ok(InteractionResponse {
-        data: Some(data),
-        kind: InteractionResponseType::ChannelMessageWithSource,
     })
 }
 

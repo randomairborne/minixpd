@@ -10,7 +10,7 @@ use crate::{AppState, Error};
 pub async fn handle(interaction: Interaction, state: AppState) -> Result<(), Error> {
     let interaction_token = interaction.token.clone();
     let interaction_id = interaction.id;
-    let response = match crate::processor::process(interaction, state.clone()).await {
+    let response = match crate::processor::process_interaction(interaction, state.clone()).await {
         Ok(val) => val,
         Err(e) => {
             error!("{e:#?}");
@@ -26,10 +26,12 @@ pub async fn handle(interaction: Interaction, state: AppState) -> Result<(), Err
             }
         }
     };
-    state
-        .client
-        .interaction(state.my_id)
-        .create_response(interaction_id, &interaction_token, &response)
-        .await?;
+    if response.kind != InteractionResponseType::Pong {
+        state
+            .client
+            .interaction(state.my_id)
+            .create_response(interaction_id, &interaction_token, &response)
+            .await?;
+    }
     Ok(())
 }
