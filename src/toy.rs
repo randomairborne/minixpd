@@ -9,14 +9,14 @@ use twilight_model::{
 };
 use twilight_util::builder::{embed::EmbedBuilder, InteractionResponseDataBuilder};
 
-use crate::{processor::CommandProcessorError, AppState};
+use crate::{AppState, Error};
 
 pub async fn modify(
     toy: Toy,
     guild_id: Id<GuildMarker>,
     invoker: User,
     state: AppState,
-) -> Result<InteractionResponse, CommandProcessorError> {
+) -> Result<InteractionResponse, Error> {
     #[allow(clippy::cast_possible_wrap)]
     let xp = query!(
         "SELECT * FROM levels WHERE id = $1 AND guild = $2",

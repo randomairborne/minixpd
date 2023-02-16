@@ -1,54 +1,43 @@
-use std::{sync::{Arc, RwLock}, collections::{BinaryHeap, HashSet}};
+use std::{sync::Arc, time::Duration};
 
-use nohash_hasher::NoHashHasher;
-use twilight_model::id::{Id, marker::UserMarker};
-type Expiries =  Arc<RwLock<BinaryHeap<Expiry>>>;
+use ahash::AHashSet;
+use parking_lot::RwLock;
+use twilight_model::id::{
+    marker::{GuildMarker, UserMarker},
+    Id,
+};
+
+pub type IdSet = (Id<GuildMarker>, Id<UserMarker>);
+
 #[derive(Debug, Clone)]
 pub struct MessagingCache {
-    tokens: Arc<RwLock<HashSet<Id<UserMarker>, NoHashHasher<u64>>>>,
-    expiries: Expiries
+    users: Arc<RwLock<AHashSet<IdSet>>>,
 }
-
 
 impl MessagingCache {
     pub fn new() -> Self {
-        let expiries = Arc::new(RwLock::new(BinaryHeap::new()));
-        std::thread::spawn(move || Self::refresh_expiries(expiries.clone()) );
+        Self::default()
+    }
+    pub async fn add(&self, guild: Id<GuildMarker>, user: Id<UserMarker>) {
+        if self.users.write().insert((guild, user)) {
+            let possible_clear = Arc::downgrade(&self.users);
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                if let Some(clear) = possible_clear.upgrade() {
+                    clear.write().remove(&(guild, user));
+                }
+            });
+        }
+    }
+    pub fn contains(&self, guild: Id<GuildMarker>, user: Id<UserMarker>) -> bool {
+        self.users.read().contains(&(guild, user))
+    }
+}
+
+impl Default for MessagingCache {
+    fn default() -> Self {
         Self {
-            tokens: Arc::new(RwLock::new(HashSet::with_hasher(nohash_hasher::NoHashHasher::default()))),
-            expiries
+            users: Arc::new(RwLock::new(AHashSet::new())),
         }
-    }
-    fn refresh_expiries(expiries: Expiries) {
-        loop {
-            {
-                let expiries = expiries.write().unwrap();
-                Self::remove_expired(expiries)
-            }
-        }
-    }
-    fn remove_expired(expiries: std::sync::RwLockWriteGuard<'_, BinaryHeap<Expiry>>) {
-        
-        while let Some(val) = expiries.peek() {
-            if val.when > std::time::Instant::now() {}
-        }
-    
-    }
-}
-
-#[derive(Hash, PartialEq, Eq, Clone, Debug)]
-struct Expiry {
-    when: std::time::Instant,
-    what: Id<UserMarker>
-}
-
-impl std::cmp::PartialOrd for Expiry {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.when.partial_cmp(&other.when).map(|v| v.reverse())
-    }
-}
-impl std::cmp::Ord for Expiry {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.when.cmp(&other.when).reverse()
     }
 }

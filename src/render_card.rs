@@ -5,8 +5,6 @@ use resvg::{
     usvg_text_layout::TreeTextToPath,
 };
 
-use crate::AppState;
-
 #[derive(serde::Serialize)]
 pub struct Context {
     pub level: u64,
@@ -19,9 +17,9 @@ pub struct Context {
     pub toy: Option<String>,
 }
 
-pub async fn render(state: AppState, context: Context) -> Result<Vec<u8>, RenderingError> {
+pub async fn render(state: SvgState, context: Context) -> Result<Vec<u8>, RenderingError> {
     let context = tera::Context::from_serialize(context)?;
-    tokio::task::spawn_blocking(move || do_render(&state.svg, &context)).await?
+    tokio::task::spawn_blocking(move || do_render(&state, &context)).await?
 }
 
 fn do_render(state: &SvgState, context: &tera::Context) -> Result<Vec<u8>, RenderingError> {
@@ -77,7 +75,7 @@ impl SvgState {
 impl Default for SvgState {
     fn default() -> Self {
         let mut fonts = resvg::usvg_text_layout::fontdb::Database::new();
-        fonts.load_font_data(include_bytes!("resources/fonts/Mojang.ttf").to_vec());
+        fonts.load_font_data(include_bytes!("resources/Mojang.ttf").to_vec());
         let mut tera = tera::Tera::default();
         tera.autoescape_on(vec!["svg", "html", "xml", "htm"]);
         tera.register_tester("none", none_tester);

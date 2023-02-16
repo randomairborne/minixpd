@@ -1,10 +1,10 @@
 [package]
-name = "experienced-listener"
+name = "minixpd"
 version = "0.1.0"
 edition = "2021"
 authors = ["valkyrie_pilot <valk@randomairborne.dev>"]
 description = "A websocket listener for experienced"
-repository = "https://github.com/randomairborne/experienced"
+repository = "https://github.com/randomairborne/minixpd"
 readme = "README.txt"
 license = "MS-PL"
 categories = ["games"]
@@ -12,26 +12,24 @@ keywords = ["discord-bot", "mee6"]
 
 [dependencies]
 twilight-gateway = { version = "0.15", features = ["rustls-native-roots", "twilight-http"], default-features = false }
-reqwest = { version = "0.11", features = ["json", "rustls-tls-native-roots"], default-features = false }
 sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "tls", "postgres", "macros", "offline"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 twilight-util = { version = "0.15", features = ["builder"] }
 serde = { version = "1", features = ["derive"] }
 twilight-interactions = "0.15"
-nohash-hasher = "0.2.0"
 twilight-model = "0.15"
 twilight-http = "0.15"
+parking_lot = "0.12"
 dotenvy = "0.15"
 serde_json = "1"
 thiserror = "1"
 tracing = "0.1"
 futures = "0.3"
 resvg = "0.29"
+ahash = "0.8"
 png = "0.17"
 rand = "0.8"
 mee6 = "0.1"
-hex = "0.4"
-csv = "1.2"
 tera = "1"
 

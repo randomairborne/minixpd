@@ -1,5 +1,5 @@
-use crate::{processor::CommandProcessorError, AppState};
-use sqlx::query;
+use crate::{AppState, Error};
+
 use twilight_model::{
     channel::message::{
         component::{Button, ButtonStyle},
@@ -20,7 +20,7 @@ pub async fn get_level(
     invoker: User,
     token: String,
     state: AppState,
-) -> Result<InteractionResponse, CommandProcessorError> {
+) -> Result<InteractionResponse, Error> {
     #[allow(clippy::cast_possible_wrap)]
     let guild_id = guild_id.get() as i64;
     // Select current XP from the database, return 0 if there is no row
@@ -79,7 +79,7 @@ async fn generate_level_response(
     user: User,
     level_info: mee6::LevelInfo,
     rank: i64,
-) -> Result<InteractionResponse, CommandProcessorError> {
+) -> Result<InteractionResponse, Error> {
     tokio::task::spawn(async move {
         let interaction_client = state.client.interaction(state.my_id);
         #[allow(clippy::cast_possible_wrap)]
@@ -92,7 +92,7 @@ async fn generate_level_response(
         .map_or(None, |v| v.map(|r| r.toy));
         #[allow(clippy::cast_precision_loss)]
         match crate::render_card::render(
-            state.clone(),
+            state.svg.clone(),
             crate::render_card::Context {
                 level: level_info.level(),
                 rank,
@@ -160,14 +160,14 @@ async fn generate_level_response(
 
 pub async fn leaderboard(
     guild_id: Id<GuildMarker>,
-    state: AppState,
-) -> Result<InteractionResponse, CommandProcessorError> {
+    db: sqlx::PgPool,
+) -> Result<InteractionResponse, Error> {
     #[allow(clippy::cast_possible_wrap)]
     let users = query!(
         "SELECT * FROM levels WHERE guild = $1 ORDER BY xp LIMIT 10",
         guild_id.get() as i64
     )
-    .fetch_all(&state.db)
+    .fetch_all(&db)
     .await?;
     let mut description = String::with_capacity(users.len() * 128);
     #[allow(clippy::cast_sign_loss)]
@@ -200,7 +200,7 @@ pub async fn leaderboard(
     });
     let data = InteractionResponseDataBuilder::new()
         .embeds([embed])
-        .components([back_button, forward_button])
+        .components([forward_button, back_button])
         .build();
     Ok(InteractionResponse {
         data: Some(data),

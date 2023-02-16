@@ -38,17 +38,11 @@ jobs:
         with:
           name: executables
           path: |
-            target/x86_64-unknown-linux-musl/release/experienced-slash
-            target/x86_64-unknown-linux-musl/release/experienced-listener
-            target/x86_64-unknown-linux-musl/release/experienced-web
+            target/x86_64-unknown-linux-musl/release/minixpd
 
   deploy:
     runs-on: ubuntu-latest
     needs: [build]
-    strategy:
-      fail-fast: true
-      matrix:
-        side: [listener, slash, web]
     steps:
       - name: Correct env
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
@@ -75,16 +69,6 @@ jobs:
       - name: Build container
         uses: docker/build-push-action@v4
         with:
-          file: ${{ matrix.side }}/Dockerfile
-          context: .
           push: true
           tags: ghcr.io/${{ env.REPO }}-${{ matrix.side }}:latest
           platforms: linux/amd64
-
-      - name: Set up flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - run: flyctl deploy --detach
-        working-directory: ./${{ matrix.side }}/
-        env:
-          FLY_ACCESS_TOKEN: ${{ secrets.FLY_ACCESS_TOKEN }}

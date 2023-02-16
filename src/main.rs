@@ -3,6 +3,7 @@
 mod cmd_defs;
 mod handler;
 mod levels;
+mod message;
 mod minicache;
 mod processor;
 mod render_card;
@@ -44,7 +45,7 @@ async fn main() {
         .run(&db)
         .await
         .expect("Failed to run database migrations!");
-    let client = Arc::new(twilight_http::Client::new(token));
+    let client = Arc::new(twilight_http::Client::new(token.clone()));
     println!("Creating commands...");
     let my_id = client
         .current_user_application()
@@ -55,13 +56,10 @@ async fn main() {
         .expect("Failed to convert own app ID!")
         .id;
     cmd_defs::register(client.interaction(my_id)).await;
-    let http = reqwest::Client::new();
     let svg = SvgState::new();
-
-    let client = twilight_http::Client::new(token.clone());
     let intents = Intents::GUILD_MESSAGES;
     let config = Config::new(token, intents);
-
+    let cooldowns = minicache::MessagingCache::new();
     let mut shards: Vec<Shard> =
         twilight_gateway::stream::create_recommended(&client, config, |_, builder| builder.build())
             .await
@@ -79,21 +77,19 @@ async fn main() {
     });
     let mut events = ShardEventStream::new(shards.iter_mut());
     println!("Connecting to discord");
-    let client = Arc::new(client);
+    let state = AppState {
+        db,
+        client,
+        my_id,
+        cooldowns,
+        svg,
+    };
     while let Some((_shard, event_result)) = events.next().await {
         match event_result {
             Ok(event) => {
-                let redis = match redis.get().await {
-                    Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("ERROR: Fatal redis error: {e}");
-                        return;
-                    }
-                };
-                let client = client.clone();
-                let db = db.clone();
+                let state = state.clone();
                 tokio::spawn(async move {
-                    if let Err(e) = handle_event(event, db, redis, client).await {
+                    if let Err(e) = handle_event(event, state).await {
                         eprintln!("Handler error: {e}");
                     }
                 });
@@ -104,14 +100,10 @@ async fn main() {
     println!("Done, see ya!");
 }
 
-async fn handle_event(
-    event: Event,
-    db: PgPool,
-    redis: deadpool_redis::Connection,
-    http: Arc<twilight_http::Client>,
-) -> Result<(), Error> {
+async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {
     match event {
-        Event::MessageCreate(msg) => message::save(*msg, db, redis, http).await,
+        Event::MessageCreate(msg) => message::save(*msg, state).await,
+        Event::InteractionCreate(i) => handler::handle(i.0, state).await,
         _ => Ok(()),
     }
 }
@@ -119,9 +111,36 @@ async fn handle_event(
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
-    pub pubkey: Arc<String>,
     pub client: Arc<twilight_http::Client>,
     pub my_id: Id<ApplicationMarker>,
+    pub cooldowns: minicache::MessagingCache,
     pub svg: SvgState,
-    pub http: reqwest::Client,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Discord sent a command that is not known!")]
+    UnrecognizedCommand,
+    #[error("Discord did not send a user object for the command invoker when it was required!")]
+    NoInvoker,
+    #[error("Discord did not send a user object for the command target when it was required!")]
+    NoTarget,
+    #[error("Discord did not send part of the Resolved Data!")]
+    NoResolvedData,
+    #[error("Discord did not send target ID for message!")]
+    NoMessageTargetId,
+    #[error("Discord sent interaction data for an unsupported interaction type!")]
+    WrongInteractionData,
+    #[error("Discord did not send any interaction data!")]
+    NoInteractionData,
+    #[error("Discord did not send a guild ID!")]
+    NoGuildId,
+    #[error("Interaction parser encountered an error: {0}!")]
+    Parse(#[from] twilight_interactions::error::ParseError),
+    #[error("SVG renderer encountered an error: {0}!")]
+    ImageGenerator(#[from] crate::render_card::RenderingError),
+    #[error("SQLx encountered an error: {0}")]
+    Sqlx(#[from] sqlx::Error),
+    #[error("Twilight-HTTP encountered an error: {0}")]
+    Http(#[from] twilight_http::Error),
 }
