@@ -63,7 +63,7 @@ async fn gen_leaderboard(
     let mut description = String::with_capacity(users.len() * 128);
     #[allow(clippy::cast_sign_loss)]
     for (i, user) in users.iter().enumerate() {
-        let rank: i64 = i as i64 + (zpage * 10);
+        let rank: i64 = i as i64 + (zpage * 10) + 1;
         description += &format!("{rank}. <@{}>\n", user.id as u64);
     }
     if description.is_empty() {
