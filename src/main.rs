@@ -29,6 +29,9 @@ const THEME_COLOR: u32 = 0x33_33_66;
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+    if std::env::var("LOG").is_err() {
+        std::env::set_var("LOG", "minixpd=INFO");
+    }
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_subscriber::EnvFilter::from_env("LOG"))
@@ -37,7 +40,7 @@ async fn main() {
         std::env::var("DISCORD_TOKEN").expect("Expected environment variable DISCORD_TOKEN");
     let database_url =
         std::env::var("DATABASE_URL").expect("Expected environment variable DATABASE_URL");
-    println!("Connecting to database {database_url}");
+    info!("Connecting to database {database_url}");
     let db = PgPool::connect(&database_url)
         .await
         .expect("Failed to connect to the database!");
@@ -46,7 +49,7 @@ async fn main() {
         .await
         .expect("Failed to run database migrations!");
     let client = Arc::new(twilight_http::Client::new(token.clone()));
-    println!("Creating commands...");
+    info!("Creating commands...");
     let my_id = client
         .current_user_application()
         .await
@@ -70,13 +73,13 @@ async fn main() {
         tokio::signal::ctrl_c()
             .await
             .expect("Failed to listen to ctrl-c");
-        println!("Shutting down...");
+        info!("Shutting down...");
         for shard in shard_closers {
-            shard.close(CloseFrame::NORMAL).ok();
+            shard.close(CloseFrame::NORMAL).expect("Failed to close shard`");
         }
     });
     let mut events = ShardEventStream::new(shards.iter_mut());
-    println!("Connecting to discord");
+    info!("Connecting to discord");
     let state = AppState {
         db,
         client,
@@ -90,14 +93,14 @@ async fn main() {
                 let state = state.clone();
                 tokio::spawn(async move {
                     if let Err(e) = handle_event(event, state).await {
-                        eprintln!("Handler error: {e}");
+                        error!("Handler error: {e}");
                     }
                 });
             }
-            Err(e) => eprintln!("Shard loop error: {e}"),
+            Err(e) => error!("Shard loop error: {e}"),
         }
     }
-    println!("Done, see ya!");
+    info!("Done, see ya!");
 }
 
 async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {

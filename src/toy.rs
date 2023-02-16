@@ -23,9 +23,9 @@ pub async fn modify(
         invoker.id.get() as i64,
         guild_id.get() as i64
     )
-    .fetch_one(&state.db)
+    .fetch_optional(&state.db)
     .await?
-    .xp;
+    .map_or(0, |r| r.xp);
     #[allow(clippy::cast_sign_loss)]
     let level_info = mee6::LevelInfo::new(xp as u64);
     if level_info.level() < toy.level_requirement() {
