@@ -182,7 +182,7 @@ pub async fn leaderboard(
         custom_id: Some("back_button".to_string()),
         disabled: true,
         emoji: Some(ReactionType::Unicode {
-            name: "arrow_backward".to_string(),
+            name: "⬅".to_string(),
         }),
         label: Some("Previous".to_string()),
         style: ButtonStyle::Primary,
@@ -192,7 +192,7 @@ pub async fn leaderboard(
         custom_id: Some("forward_button".to_string()),
         disabled: true,
         emoji: Some(ReactionType::Unicode {
-            name: "arrow_forward".to_string(),
+            name: "➡️".to_string(),
         }),
         label: Some("Next".to_string()),
         style: ButtonStyle::Primary,
