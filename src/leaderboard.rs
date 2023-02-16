@@ -22,8 +22,10 @@ use twilight_util::builder::{
 
 pub async fn leaderboard(
     guild_id: Id<GuildMarker>,
+    invoker: Id<UserMarker>,
+    token: String,
     db: sqlx::PgPool,
-    prefs: crate::cmd_defs::LeaderboardCommand,
+    prefs: LeaderboardCommand,
 ) -> Result<InteractionResponse, Error> {
     let zpage = if let Some(pick) = prefs.page {
         pick - 1
@@ -32,7 +34,7 @@ pub async fn leaderboard(
     } else {
         0
     };
-    query!("INSERT INTO leaderboards (invoker, message, page, token) VALUES ($1, $2, $3, $4)", );
+    query!("INSERT INTO leaderboards (invoker, message, page, token) VALUES ($1, $2, $3, $4)", invoker, );
     let (embed, components) = gen_leaderboard(guild_id, db, zpage).await?;
     let data = InteractionResponseDataBuilder::new()
         .embeds([embed])
