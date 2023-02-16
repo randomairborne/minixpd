@@ -7,11 +7,10 @@ use twilight_model::{
             component::{ActionRow, Button, ButtonStyle},
             Component, Embed, MessageFlags, ReactionType,
         },
-        Message,
     },
     http::interaction::{InteractionResponse, InteractionResponseType},
     id::{
-        marker::{GuildMarker, UserMarker},
+        marker::{GuildMarker, InteractionMarker, UserMarker},
         Id,
     },
 };
@@ -22,20 +21,20 @@ use twilight_util::builder::{
 
 pub async fn leaderboard(
     guild_id: Id<GuildMarker>,
-    invoker: Id<UserMarker>,
+    interaction: Id<InteractionMarker>,
     token: String,
-    db: sqlx::PgPool,
+    state: AppState,
     prefs: LeaderboardCommand,
 ) -> Result<InteractionResponse, Error> {
+    state.tokens.set(interaction, token).await;
     let zpage = if let Some(pick) = prefs.page {
         pick - 1
     } else if let Some(pick) = prefs.user {
-        get_user_position(pick.resolved.id, guild_id, &db).await?
+        get_user_position(pick.resolved.id, guild_id, &state.db).await?
     } else {
         0
     };
-    query!("INSERT INTO leaderboards (invoker, message, page, token) VALUES ($1, $2, $3, $4)", invoker, );
-    let (embed, components) = gen_leaderboard(guild_id, db, zpage).await?;
+    let (embed, components) = gen_leaderboard(guild_id, state.db, zpage).await?;
     let data = InteractionResponseDataBuilder::new()
         .embeds([embed])
         .components([Component::ActionRow(ActionRow { components })])
@@ -76,7 +75,7 @@ async fn gen_leaderboard(
         .color(crate::THEME_COLOR)
         .build();
     let back_button = Component::Button(Button {
-        custom_id: Some("back_button".to_string()),
+        custom_id: Some((zpage).to_string()),
         disabled: zpage == 0,
         emoji: Some(ReactionType::Unicode {
             name: "⬅".to_string(),
@@ -86,7 +85,7 @@ async fn gen_leaderboard(
         url: None,
     });
     let forward_button = Component::Button(Button {
-        custom_id: Some("forward_button".to_string()),
+        custom_id: Some((zpage + 2).to_string()),
         disabled: users.len() < 10,
         emoji: Some(ReactionType::Unicode {
             name: "➡️".to_string(),
@@ -100,33 +99,17 @@ async fn gen_leaderboard(
 
 pub async fn process_message_component(
     data: MessageComponentInteractionData,
-    parent: Message,
     guild_id: Id<GuildMarker>,
+    interaction: Id<InteractionMarker>,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
+    let offset = data.custom_id.parse()?;
     #[allow(clippy::cast_possible_wrap)]
-    let leaderboard = query!(
-        "SELECT * FROM leaderboards WHERE message = $1",
-        parent.id.get() as i64
-    )
-    .fetch_one(&state.db)
-    .await?;
-    let offset = match data.custom_id.as_str() {
-        "forward_button" => leaderboard.page + 1,
-        "back_button" => leaderboard.page - 1,
-        _ => return Err(Error::InvalidCustomButtonId),
-    };
-    #[allow(clippy::cast_possible_wrap)]
-    let (embed, components) = gen_leaderboard(
-        guild_id,
-        state.db,
-        offset,
-    )
-    .await?;
+    let (embed, components) = gen_leaderboard(guild_id, state.db, offset).await?;
     state
         .client
         .interaction(state.my_id)
-        .update_response(&leaderboard.token)
+        .update_response(&state.tokens.get(interaction).ok_or(Error::LeaderboardExpired)?)
         .components(Some(&[Component::ActionRow(ActionRow { components })]))?
         .embeds(Some(&[embed]))?
         .await?;

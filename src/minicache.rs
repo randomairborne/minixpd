@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use ahash::{AHashMap, AHashSet};
 use parking_lot::RwLock;
 use twilight_model::id::{
-    marker::{GuildMarker, UserMarker, InteractionMarker},
+    marker::{GuildMarker, InteractionMarker, UserMarker},
     Id,
 };
 
@@ -27,8 +27,8 @@ impl TokenCache {
             });
         }
     }
-    pub fn get(&self, interaction: Id<InteractionMarker>, token: String) -> bool {
-        self.tokens.read().contains_key(&interaction)
+    pub fn get(&self, interaction: Id<InteractionMarker>) -> Option<String> {
+        self.tokens.read().get(&interaction).cloned()
     }
 }
 

@@ -62,6 +62,7 @@ async fn main() {
     let intents = Intents::GUILD_MESSAGES;
     let config = Config::new(token, intents);
     let cooldowns = minicache::MessagingCache::new();
+    let tokens = minicache::TokenCache::new();
     let shards: Vec<Shard> =
         twilight_gateway::stream::create_recommended(&client, config, |_, builder| builder.build())
             .await
@@ -74,6 +75,7 @@ async fn main() {
         my_id,
         cooldowns,
         svg,
+        tokens,
     };
     let should_shutdown = Arc::new(AtomicBool::new(false));
 
@@ -127,6 +129,7 @@ async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
+    pub tokens: minicache::TokenCache,
     pub client: Arc<twilight_http::Client>,
     pub my_id: Id<ApplicationMarker>,
     pub cooldowns: minicache::MessagingCache,
@@ -145,6 +148,8 @@ pub enum Error {
     NoResolvedData,
     #[error("Discord did not send target ID for message!")]
     NoMessageTargetId,
+    #[error("This leaderboard is expired, please make a new one!")]
+    LeaderboardExpired,
     #[error("Discord sent interaction data for an unsupported interaction type!")]
     WrongInteractionData,
     #[error("Discord did not send any interaction data!")]
@@ -155,6 +160,8 @@ pub enum Error {
     NoParentMessage,
     #[error("Discord sent unknown custom button ID!")]
     InvalidCustomButtonId,
+    #[error("Failed to parse custom ID as integer: {0}!")]
+    CustomIdParseFailure(#[from] std::num::ParseIntError),
     #[error("Failed to validate message: {0}!")]
     ValidateMessage(#[from] twilight_validate::message::MessageValidationError),
     #[error("Interaction parser encountered an error: {0}!")]
