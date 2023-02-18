@@ -68,14 +68,16 @@ async fn main() {
             .await
             .expect("Failed to create reccomended shard count")
             .collect();
+    let senders: Vec<twilight_gateway::MessageSender> =
+        shards.iter().map(twilight_gateway::Shard::sender).collect();
     info!("Connecting to discord");
     let state = AppState {
         db,
+        tokens,
         client,
         my_id,
         cooldowns,
         svg,
-        tokens,
     };
     let should_shutdown = Arc::new(AtomicBool::new(false));
 
@@ -89,8 +91,13 @@ async fn main() {
 
     info!("Shutting down..");
 
-    // Instruct the shards to shutdown.
+    // Let the shards know not to reconnect
     should_shutdown.store(true, std::sync::atomic::Ordering::Relaxed);
+
+    // Tell the shards to shut down
+    for sender in senders {
+        sender.close(CloseFrame::NORMAL).ok();
+    }
 
     // Await all tasks to complete.
     while set.join_next().await.is_some() {}

@@ -2,11 +2,9 @@ use crate::{cmd_defs::LeaderboardCommand, AppState, Error};
 
 use twilight_model::{
     application::interaction::message_component::MessageComponentInteractionData,
-    channel::{
-        message::{
-            component::{ActionRow, Button, ButtonStyle},
-            Component, Embed, MessageFlags, ReactionType,
-        },
+    channel::message::{
+        component::{ActionRow, Button, ButtonStyle},
+        Component, Embed, MessageFlags, ReactionType,
     },
     http::interaction::{InteractionResponse, InteractionResponseType},
     id::{
@@ -109,7 +107,12 @@ pub async fn process_message_component(
     state
         .client
         .interaction(state.my_id)
-        .update_response(&state.tokens.get(interaction).ok_or(Error::LeaderboardExpired)?)
+        .update_response(
+            &state
+                .tokens
+                .get(interaction)
+                .ok_or(Error::LeaderboardExpired)?,
+        )
         .components(Some(&[Component::ActionRow(ActionRow { components })]))?
         .embeds(Some(&[embed]))?
         .await?;

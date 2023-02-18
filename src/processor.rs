@@ -42,13 +42,8 @@ pub async fn process_interaction(
                 .await?
             }
             InteractionData::MessageComponent(mc) => {
-                crate::leaderboard::process_message_component(
-                    mc,
-                    guild_id,
-                    interaction.id,
-                    state,
-                )
-                .await?
+                crate::leaderboard::process_message_component(mc, guild_id, interaction.id, state)
+                    .await?
             }
             _ => PONG,
         };
@@ -93,14 +88,7 @@ async fn process_slash_cmd(
         }
         "leaderboard" => {
             let prefs = crate::cmd_defs::LeaderboardCommand::from_interaction(data.into())?;
-            crate::leaderboard::leaderboard(
-                guild_id,
-                interaction_id,
-                token,
-                state,
-                prefs,
-            )
-            .await
+            crate::leaderboard::leaderboard(guild_id, interaction_id, token, state, prefs).await
         }
         "toy" => {
             let selected = crate::cmd_defs::ToyCommand::from_interaction(data.into())?.toy_image;
