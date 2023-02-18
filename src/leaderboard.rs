@@ -16,6 +16,7 @@ use twilight_util::builder::{
     embed::{EmbedBuilder, EmbedFooterBuilder},
     InteractionResponseDataBuilder,
 };
+use std::fmt::Write;
 
 pub async fn leaderboard(
     guild_id: Id<GuildMarker>,
@@ -42,7 +43,7 @@ async fn gen_leaderboard(
 ) -> Result<InteractionResponseData, Error> {
     #[allow(clippy::cast_possible_wrap)]
     let users = query!(
-        "SELECT * FROM levels WHERE guild = $1 ORDER BY xp LIMIT 10 OFFSET $2",
+        "SELECT * FROM levels WHERE guild = $1 ORDER BY xp DESC LIMIT 10 OFFSET $2",
         guild_id.get() as i64,
         zpage * 10
     )
@@ -51,8 +52,9 @@ async fn gen_leaderboard(
     let mut description = String::with_capacity(users.len() * 128);
     #[allow(clippy::cast_sign_loss)]
     for (i, user) in users.iter().enumerate() {
+        let level = mee6::LevelInfo::new(user.xp as u64).level();
         let rank: i64 = i as i64 + (zpage * 10) + 1;
-        description += &format!("{rank}. <@{}>\n", user.id as u64);
+        writeln!(description, "Level {level}. <@{}> #{rank}", user.id as u64).ok();
     }
     if description.is_empty() {
         description += "Nobody is ranked yet.";
@@ -63,7 +65,7 @@ async fn gen_leaderboard(
         .color(crate::THEME_COLOR)
         .build();
     let back_button = Component::Button(Button {
-        custom_id: Some((zpage).to_string()),
+        custom_id: Some((zpage - 1).to_string()),
         disabled: zpage == 0,
         emoji: Some(ReactionType::Unicode {
             name: "⬅".to_string(),
@@ -73,7 +75,7 @@ async fn gen_leaderboard(
         url: None,
     });
     let forward_button = Component::Button(Button {
-        custom_id: Some((zpage + 2).to_string()),
+        custom_id: Some((zpage + 1).to_string()),
         disabled: users.len() < 10,
         emoji: Some(ReactionType::Unicode {
             name: "➡️".to_string(),
