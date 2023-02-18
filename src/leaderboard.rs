@@ -1,5 +1,6 @@
 use crate::{cmd_defs::LeaderboardCommand, AppState, Error};
 
+use std::fmt::Write;
 use twilight_model::{
     application::interaction::message_component::MessageComponentInteractionData,
     channel::message::{
@@ -16,13 +17,14 @@ use twilight_util::builder::{
     embed::{EmbedBuilder, EmbedFooterBuilder},
     InteractionResponseDataBuilder,
 };
-use std::fmt::Write;
 
 pub async fn leaderboard(
     guild_id: Id<GuildMarker>,
     state: AppState,
     prefs: LeaderboardCommand,
 ) -> Result<InteractionResponse, Error> {
+    // "zpage" means "zero-indexed page", which is how this is represented internally.
+    // We add one whenever we show it to the user, and add one every time we get it from the user.
     let zpage = if let Some(pick) = prefs.page {
         pick - 1
     } else if let Some(pick) = prefs.user {
@@ -49,6 +51,8 @@ async fn gen_leaderboard(
     )
     .fetch_all(&db)
     .await?;
+    // this is kinda the only way to do this
+    // It's designed to only allocate once, at the start here
     let mut description = String::with_capacity(users.len() * 128);
     #[allow(clippy::cast_sign_loss)]
     for (i, user) in users.iter().enumerate() {
@@ -76,6 +80,9 @@ async fn gen_leaderboard(
     });
     let forward_button = Component::Button(Button {
         custom_id: Some((zpage + 1).to_string()),
+        // this checks if the users on the current page are less then 10.
+        // If this is the case, that means we *must* be at the last page.
+        // this saves us doing weird counting shenanigans with the db
         disabled: users.len() < 10,
         emoji: Some(ReactionType::Unicode {
             name: "➡️".to_string(),
@@ -97,6 +104,9 @@ pub async fn process_message_component(
     guild_id: Id<GuildMarker>,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
+    // when we create the buttons, we set next and previous's custom IDs to the current page
+    // plus and minus 1. This means that we don't have to store which page which
+    // message is on, because the component will tell us exactly where it wants to go!
     let offset: i64 = data.custom_id.parse()?;
     Ok(InteractionResponse {
         kind: InteractionResponseType::UpdateMessage,
@@ -104,6 +114,7 @@ pub async fn process_message_component(
     })
 }
 
+// this is a really simple wrapper function
 async fn get_user_position(
     user_id: Id<UserMarker>,
     guild_id: Id<GuildMarker>,

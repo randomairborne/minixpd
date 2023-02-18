@@ -17,13 +17,16 @@ pub struct Context {
     pub toy: Option<String>,
 }
 
+// the render can take a while, so this is a relatively thin function
 pub async fn render(state: SvgState, context: Context) -> Result<Vec<u8>, RenderingError> {
     let context = tera::Context::from_serialize(context)?;
     tokio::task::spawn_blocking(move || do_render(&state, &context)).await?
 }
 
 fn do_render(state: &SvgState, context: &tera::Context) -> Result<Vec<u8>, RenderingError> {
+    // this actually just does the templating, which has pretty much all been set up already.
     let svg = state.tera.render("svg", context)?;
+    // the data resolver is not used, but is here in case we support user PFPs in the future
     let resolve_data = Box::new(
         |mime: &str, data: std::sync::Arc<Vec<u8>>, _: &resvg::usvg::Options| match mime {
             "image/png" => Some(ImageKind::PNG(data)),
@@ -31,6 +34,7 @@ fn do_render(state: &SvgState, context: &tera::Context) -> Result<Vec<u8>, Rende
             _ => None,
         },
     );
+    // All string images come from a static hashmap initialized with [`SvgState`]
     let resolve_string_state = state.clone();
     let resolve_string = Box::new(move |href: &str, _: &resvg::usvg::Options| {
         Some(ImageKind::PNG(
@@ -42,6 +46,7 @@ fn do_render(state: &SvgState, context: &tera::Context) -> Result<Vec<u8>, Rende
             resolve_data,
             resolve_string,
         },
+        // This enables crisp-edge rendering for our resources, which improves the quality of CEa_TiDE's pixelart.
         image_rendering: ImageRendering::OptimizeSpeed,
         ..Default::default()
     };

@@ -59,8 +59,8 @@ async fn main() {
         .id;
     cmd_defs::register(client.interaction(my_id)).await;
     let svg = SvgState::new();
-    let intents = Intents::GUILD_MESSAGES;
-    let config = Config::new(token, intents);
+    // We only need GUILD_MESSAGES, and we only use the fact that a message has been created, we do not use message content
+    let config = Config::new(token, Intents::GUILD_MESSAGES);
     let cooldowns = minicache::MessagingCache::new();
     let shards: Vec<Shard> =
         twilight_gateway::stream::create_recommended(&client, config, |_, builder| builder.build())
@@ -109,6 +109,7 @@ async fn event_loop(mut shard: Shard, should_shutdown: Arc<AtomicBool>, state: A
                 let state = state.clone();
                 tokio::spawn(async move {
                     if let Err(e) = handle_event(event, state).await {
+                        // this includes even user caused errors. User beware. Don't set up automatic emails or anything.
                         error!("Handler error: {e}");
                     }
                 });
@@ -123,6 +124,7 @@ async fn event_loop(mut shard: Shard, should_shutdown: Arc<AtomicBool>, state: A
     }
 }
 
+// This function is broken out to help prevent the event loop from being totally unreadable.
 async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {
     match event {
         Event::MessageCreate(msg) => message::save(*msg, state).await,

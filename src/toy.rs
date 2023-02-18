@@ -29,6 +29,7 @@ pub async fn modify(
     #[allow(clippy::cast_sign_loss)]
     let level_info = mee6::LevelInfo::new(xp as u64);
     if level_info.level() < toy.level_requirement() {
+        // i break the rules on error handling here. It does make nicer UX.
         let embed = EmbedBuilder::new()
             .description(format!(
                 "You need at least {} levels for {toy} (you have {})",
@@ -39,7 +40,7 @@ pub async fn modify(
         return Ok(ephemeral_embed_response(embed));
     }
     let embed = EmbedBuilder::new()
-        .description(format!("Set your toy to {toy}"))
+        .description(format!("Set your toy to {toy}!"))
         .build();
     Ok(ephemeral_embed_response(embed))
 }

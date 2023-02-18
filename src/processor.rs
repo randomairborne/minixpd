@@ -19,6 +19,7 @@ pub async fn process_interaction(
     interaction: Interaction,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
+    // discord doesn't always send user for some reason. Dumb.
     let invoker = match interaction.member {
         Some(val) => val.user,
         None => interaction.user,
@@ -27,9 +28,11 @@ pub async fn process_interaction(
     let guild_id = interaction.guild_id.ok_or(Error::NoGuildId)?;
     if let Some(data) = interaction.data {
         let resp = match data {
+            // app command == slash command
             InteractionData::ApplicationCommand(ac) => {
                 process_app_cmd(*ac, interaction.token, guild_id, invoker, state).await?
             }
+            // this only applies to the leaderboard. It's the forward and back buttons.
             InteractionData::MessageComponent(mc) => {
                 crate::leaderboard::process_message_component(mc, guild_id, state).await?
             }

@@ -13,8 +13,10 @@ pub async fn handle(interaction: Interaction, state: AppState) -> Result<(), Err
     let response = match crate::processor::process_interaction(interaction, state.clone()).await {
         Ok(val) => val,
         Err(e) => {
-            error!("{e:#?}");
+            // this often produces errors that are not bugs. Thus, warn rather then error.
+            warn!("{e:#?}");
             let embed = EmbedBuilder::new().description(format!("❌ {e}")).build();
+            // Errors should always be ephemeral.
             InteractionResponse {
                 kind: InteractionResponseType::ChannelMessageWithSource,
                 data: Some(
@@ -26,12 +28,10 @@ pub async fn handle(interaction: Interaction, state: AppState) -> Result<(), Err
             }
         }
     };
-    if response.kind != InteractionResponseType::Pong {
-        state
-            .client
-            .interaction(state.my_id)
-            .create_response(interaction_id, &interaction_token, &response)
-            .await?;
-    }
+    state
+        .client
+        .interaction(state.my_id)
+        .create_response(interaction_id, &interaction_token, &response)
+        .await?;
     Ok(())
 }

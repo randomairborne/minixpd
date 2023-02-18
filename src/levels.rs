@@ -1,7 +1,6 @@
 use crate::{AppState, Error};
 
 use twilight_model::{
-    channel::message::MessageFlags,
     http::{
         attachment::Attachment,
         interaction::{InteractionResponse, InteractionResponseType},
@@ -42,6 +41,8 @@ pub async fn get_level(
         + 1;
     #[allow(clippy::cast_sign_loss)]
     let level_info = mee6::LevelInfo::new(xp as u64);
+    // I am really not a big fan of this. Too much nesting. However, as far as i can tell
+    // it does get the parts of speech right.
     let content = if user.bot {
         "Bots aren't ranked, that would be silly!".to_string()
     } else if invoker == user {
@@ -63,7 +64,6 @@ pub async fn get_level(
         kind: InteractionResponseType::ChannelMessageWithSource,
         data: Some(
             InteractionResponseDataBuilder::new()
-                .flags(MessageFlags::EPHEMERAL)
                 .embeds([EmbedBuilder::new().description(content).build()])
                 .build(),
         ),
@@ -87,7 +87,6 @@ async fn generate_level_response(
         .fetch_optional(&state.db)
         .await
         .map_or(None, |v| v.map(|r| r.toy));
-        #[allow(clippy::cast_precision_loss)]
         match crate::render_card::render(
             state.svg.clone(),
             crate::render_card::Context {
@@ -106,6 +105,8 @@ async fn generate_level_response(
             Ok(png) => {
                 match interaction_client
                     .create_followup(&token)
+                    // I don't technically need a description. But it's a big deal for accessibility.
+                    // It's also just generally nice to have
                     .attachments(&[Attachment {
                         description: Some(format!(
                             "{}#{} is level {} (rank #{}), and is {}% of the way to level {}.",
@@ -131,6 +132,8 @@ async fn generate_level_response(
                     }
                 }
             }
+            // this special error handling accounts for the fact that
+            // we are responding weirdly and seperately then a normal response
             Err(err) => {
                 match interaction_client
                     .create_followup(&token)
@@ -138,7 +141,7 @@ async fn generate_level_response(
                 {
                     Ok(awaitable) => awaitable.await,
                     Err(e) => {
-                        warn!("{e}");
+                        warn!("{e:#?}");
                         interaction_client
                             .create_followup(&token)
                             .content("Error too long, please contact bot administrators")
