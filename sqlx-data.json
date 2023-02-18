@@ -75,6 +75,28 @@
     },
     "query": "SELECT COUNT(*) as count FROM levels WHERE xp > (SELECT xp FROM levels WHERE id = $1) AND guild = $2"
   },
+  "566d0a78955428a3583b943cf4ecca30c6441ee2069ae45bbe164b25da10be92": {
+    "describe": {
+      "columns": [
+        {
+          "name": "xp",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "INSERT INTO levels (id, xp, guild) VALUES ($1, $2, $3) ON CONFLICT (id, guild)\n         DO UPDATE SET xp=levels.xp+excluded.xp RETURNING xp"
+  },
   "7313f7a39621e68a6184224d0e53b3688beba8933ba983e630b73a340c78db53": {
     "describe": {
       "columns": [
@@ -116,7 +138,7 @@
     },
     "query": "SELECT toy FROM card_toy WHERE id = $1"
   },
-  "b16d22a9529aefdc7cb73c220890db09214ff3671962b6f4aa75f1ff2669eff2": {
+  "c5ebbff1c0cde2c984f797f0b6ee9510cf3683a4642771648c03855387cf7163": {
     "describe": {
       "columns": [
         {
@@ -147,29 +169,7 @@
         ]
       }
     },
-    "query": "SELECT * FROM levels WHERE guild = $1 ORDER BY xp LIMIT 10 OFFSET $2"
-  },
-  "b8ec61035d3276a70083b5492c6437b756d522f5149edc1dbef3d905819b152f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "xp",
-          "ordinal": 0,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      }
-    },
-    "query": "INSERT INTO levels (id, xp, guild) VALUES ($1, $2, $3) ON CONFLICT (id, guild) DO UPDATE SET xp=levels.xp+excluded.xp RETURNING xp"
+    "query": "SELECT * FROM levels WHERE guild = $1 ORDER BY xp DESC LIMIT 10 OFFSET $2"
   },
   "ccf6e9fda28aa97c752a64376182184c244dc7b500009e5d2448c10e69c20448": {
     "describe": {
