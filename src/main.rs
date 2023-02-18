@@ -62,7 +62,6 @@ async fn main() {
     let intents = Intents::GUILD_MESSAGES;
     let config = Config::new(token, intents);
     let cooldowns = minicache::MessagingCache::new();
-    let tokens = minicache::TokenCache::new();
     let shards: Vec<Shard> =
         twilight_gateway::stream::create_recommended(&client, config, |_, builder| builder.build())
             .await
@@ -73,7 +72,6 @@ async fn main() {
     info!("Connecting to discord");
     let state = AppState {
         db,
-        tokens,
         client,
         my_id,
         cooldowns,
@@ -136,7 +134,6 @@ async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
-    pub tokens: minicache::TokenCache,
     pub client: Arc<twilight_http::Client>,
     pub my_id: Id<ApplicationMarker>,
     pub cooldowns: minicache::MessagingCache,
@@ -155,16 +152,12 @@ pub enum Error {
     NoResolvedData,
     #[error("Discord did not send target ID for message!")]
     NoMessageTargetId,
-    #[error("This leaderboard is expired, please make a new one!")]
-    LeaderboardExpired,
     #[error("Discord sent interaction data for an unsupported interaction type!")]
     WrongInteractionData,
     #[error("Discord did not send any interaction data!")]
     NoInteractionData,
     #[error("Discord did not send a guild ID!")]
     NoGuildId,
-    #[error("Discord did not send a parent message for button!")]
-    NoParentMessage,
     #[error("Discord sent unknown custom button ID!")]
     InvalidCustomButtonId,
     #[error("Failed to parse custom ID as integer: {0}!")]

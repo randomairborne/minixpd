@@ -6,10 +6,7 @@ use twilight_model::{
         interaction::{application_command::CommandData, Interaction, InteractionData},
     },
     http::interaction::{InteractionResponse, InteractionResponseType},
-    id::{
-        marker::{GuildMarker, InteractionMarker},
-        Id,
-    },
+    id::{marker::GuildMarker, Id},
     user::User,
 };
 
@@ -31,19 +28,10 @@ pub async fn process_interaction(
     if let Some(data) = interaction.data {
         let resp = match data {
             InteractionData::ApplicationCommand(ac) => {
-                process_app_cmd(
-                    *ac,
-                    interaction.token,
-                    guild_id,
-                    interaction.id,
-                    invoker,
-                    state,
-                )
-                .await?
+                process_app_cmd(*ac, interaction.token, guild_id, invoker, state).await?
             }
             InteractionData::MessageComponent(mc) => {
-                crate::leaderboard::process_message_component(mc, guild_id, interaction.id, state)
-                    .await?
+                crate::leaderboard::process_message_component(mc, guild_id, state).await?
             }
             _ => PONG,
         };
@@ -57,14 +45,11 @@ async fn process_app_cmd(
     data: CommandData,
     token: String,
     guild_id: Id<GuildMarker>,
-    interaction_id: Id<InteractionMarker>,
     invoker: User,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
     match data.kind {
-        CommandType::ChatInput => {
-            process_slash_cmd(data, token, guild_id, interaction_id, invoker, state).await
-        }
+        CommandType::ChatInput => process_slash_cmd(data, token, guild_id, invoker, state).await,
         CommandType::User => process_user_cmd(data, token, invoker, state).await,
         CommandType::Message => process_msg_cmd(data, token, invoker, state).await,
         _ => Err(Error::WrongInteractionData),
@@ -75,7 +60,6 @@ async fn process_slash_cmd(
     data: CommandData,
     token: String,
     guild_id: Id<GuildMarker>,
-    interaction_id: Id<InteractionMarker>,
     invoker: User,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
@@ -88,7 +72,7 @@ async fn process_slash_cmd(
         }
         "leaderboard" => {
             let prefs = crate::cmd_defs::LeaderboardCommand::from_interaction(data.into())?;
-            crate::leaderboard::leaderboard(guild_id, interaction_id, token, state, prefs).await
+            crate::leaderboard::leaderboard(guild_id, state, prefs).await
         }
         "toy" => {
             let selected = crate::cmd_defs::ToyCommand::from_interaction(data.into())?.toy_image;

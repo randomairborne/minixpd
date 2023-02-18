@@ -4,11 +4,11 @@ use twilight_model::{
     application::interaction::message_component::MessageComponentInteractionData,
     channel::message::{
         component::{ActionRow, Button, ButtonStyle},
-        Component, Embed, MessageFlags, ReactionType,
+        Component, ReactionType,
     },
-    http::interaction::{InteractionResponse, InteractionResponseType},
+    http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType},
     id::{
-        marker::{GuildMarker, InteractionMarker, UserMarker},
+        marker::{GuildMarker, UserMarker},
         Id,
     },
 };
@@ -19,12 +19,9 @@ use twilight_util::builder::{
 
 pub async fn leaderboard(
     guild_id: Id<GuildMarker>,
-    interaction: Id<InteractionMarker>,
-    token: String,
     state: AppState,
     prefs: LeaderboardCommand,
 ) -> Result<InteractionResponse, Error> {
-    state.tokens.set(interaction, token).await;
     let zpage = if let Some(pick) = prefs.page {
         pick - 1
     } else if let Some(pick) = prefs.user {
@@ -32,15 +29,8 @@ pub async fn leaderboard(
     } else {
         0
     };
-    let (embed, components) = gen_leaderboard(guild_id, state.db, zpage).await?;
-    let data = InteractionResponseDataBuilder::new()
-        .embeds([embed])
-        .components([Component::ActionRow(ActionRow { components })])
-        .flags(MessageFlags::EPHEMERAL)
-        .build();
-
     Ok(InteractionResponse {
-        data: Some(data),
+        data: Some(gen_leaderboard(guild_id, state.db, zpage).await?),
         kind: InteractionResponseType::ChannelMessageWithSource,
     })
 }
@@ -49,7 +39,7 @@ async fn gen_leaderboard(
     guild_id: Id<GuildMarker>,
     db: sqlx::PgPool,
     zpage: i64,
-) -> Result<(Embed, Vec<Component>), Error> {
+) -> Result<InteractionResponseData, Error> {
     #[allow(clippy::cast_possible_wrap)]
     let users = query!(
         "SELECT * FROM levels WHERE guild = $1 ORDER BY xp LIMIT 10 OFFSET $2",
@@ -92,33 +82,23 @@ async fn gen_leaderboard(
         style: ButtonStyle::Primary,
         url: None,
     });
-    Ok((embed, vec![back_button, forward_button]))
+    Ok(InteractionResponseDataBuilder::new()
+        .components([Component::ActionRow(ActionRow {
+            components: vec![back_button, forward_button],
+        })])
+        .embeds([embed])
+        .build())
 }
 
 pub async fn process_message_component(
     data: MessageComponentInteractionData,
     guild_id: Id<GuildMarker>,
-    interaction: Id<InteractionMarker>,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
-    let offset = data.custom_id.parse()?;
-    #[allow(clippy::cast_possible_wrap)]
-    let (embed, components) = gen_leaderboard(guild_id, state.db, offset).await?;
-    state
-        .client
-        .interaction(state.my_id)
-        .update_response(
-            &state
-                .tokens
-                .get(interaction)
-                .ok_or(Error::LeaderboardExpired)?,
-        )
-        .components(Some(&[Component::ActionRow(ActionRow { components })]))?
-        .embeds(Some(&[embed]))?
-        .await?;
+    let offset: i64 = data.custom_id.parse()?;
     Ok(InteractionResponse {
-        kind: InteractionResponseType::Pong,
-        data: None,
+        kind: InteractionResponseType::UpdateMessage,
+        data: Some(gen_leaderboard(guild_id, state.db, offset).await?),
     })
 }
 
