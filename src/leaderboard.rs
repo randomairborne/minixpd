@@ -58,7 +58,7 @@ async fn gen_leaderboard(
     for (i, user) in users.iter().enumerate() {
         let level = mee6::LevelInfo::new(user.xp as u64).level();
         let rank: i64 = i as i64 + (zpage * 10) + 1;
-        writeln!(description, "Level {level}. <@{}> #{rank}", user.id as u64).ok();
+        writeln!(description, "**#{rank}. <@{}> - Level {level}", user.id as u64).ok();
     }
     if description.is_empty() {
         description += "Nobody is ranked yet.";
