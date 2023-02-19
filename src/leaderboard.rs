@@ -51,6 +51,9 @@ async fn gen_leaderboard(
     )
     .fetch_all(&db)
     .await?;
+    if users.is_empty() {
+        return Err(Error::NoUsersForPage);
+    }
     // this is kinda the only way to do this
     // It's designed to only allocate once, at the start here
     let mut description = String::with_capacity(users.len() * 128);

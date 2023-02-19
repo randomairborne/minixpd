@@ -160,6 +160,8 @@ pub enum Error {
     NoInteractionData,
     #[error("Discord did not send a guild ID!")]
     NoGuildId,
+    #[error("This page does not exist!")]
+    NoUsersForPage,
     #[error("Discord sent unknown custom button ID!")]
     InvalidCustomButtonId,
     #[error("Failed to parse custom ID as integer: {0}!")]
