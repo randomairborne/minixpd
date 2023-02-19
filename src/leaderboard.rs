@@ -130,11 +130,11 @@ async fn get_user_position(
 ) -> Result<i64, Error> {
     #[allow(clippy::cast_possible_wrap)]
     Ok(query!(
-        "SELECT COUNT(*) as count FROM levels WHERE xp > (SELECT xp FROM levels WHERE id = $1) AND guild = $2",
+        "SELECT COUNT(*) as count FROM levels WHERE xp > (SELECT xp FROM levels WHERE id = $1 AND guild = $2) AND guild = $2",
         user_id.get() as i64,
         guild_id.get() as i64
     )
     .fetch_one(db)
     .await?
-    .count.unwrap_or(0))
+    .count.unwrap_or(0) / 10)
 }
