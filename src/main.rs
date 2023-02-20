@@ -9,7 +9,6 @@ mod minicache;
 mod processor;
 mod render_card;
 mod toy;
-mod xp_curve;
 
 use render_card::SvgState;
 use sqlx::PgPool;
