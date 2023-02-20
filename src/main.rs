@@ -9,6 +9,7 @@ mod minicache;
 mod processor;
 mod render_card;
 mod toy;
+mod xp_curve;
 
 use render_card::SvgState;
 use sqlx::PgPool;
@@ -162,6 +163,12 @@ pub enum Error {
     NoGuildId,
     #[error("This page does not exist!")]
     NoUsersForPage,
+    #[error("This modal did not contain any action rows!")]
+    NoModalActionRow,
+    #[error("This modal did not contain the required form field!")]
+    NoFormField,
+    #[error("This modal did not contain the required form data!")]
+    NoDestinationInComponent,
     #[error("Discord sent unknown custom button ID!")]
     InvalidCustomButtonId,
     #[error("Failed to parse custom ID as integer: {0}!")]

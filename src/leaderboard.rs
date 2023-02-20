@@ -2,9 +2,11 @@ use crate::{cmd_defs::LeaderboardCommand, AppState, Error};
 
 use std::fmt::Write;
 use twilight_model::{
-    application::interaction::message_component::MessageComponentInteractionData,
+    application::interaction::{
+        message_component::MessageComponentInteractionData, modal::ModalInteractionData,
+    },
     channel::message::{
-        component::{ActionRow, Button, ButtonStyle},
+        component::{ActionRow, Button, ButtonStyle, TextInput, TextInputStyle},
         Component, ReactionType,
     },
     http::interaction::{InteractionResponse, InteractionResponseData, InteractionResponseType},
@@ -86,6 +88,15 @@ async fn gen_leaderboard(
         style: ButtonStyle::Primary,
         url: None,
     });
+    let select_button = Component::Button(Button {
+        custom_id: Some("jump_modal".to_string()),
+        // this checks if we are on both the last page and the first page, in which case we do not need to be able to jump
+        disabled: users.len() < 10 && zpage == 0,
+        emoji: None,
+        label: Some("Go to page".to_string()),
+        style: ButtonStyle::Primary,
+        url: None,
+    });
     let forward_button = Component::Button(Button {
         custom_id: Some((zpage + 1).to_string()),
         // this checks if the users on the current page are less then 10.
@@ -101,10 +112,28 @@ async fn gen_leaderboard(
     });
     Ok(InteractionResponseDataBuilder::new()
         .components([Component::ActionRow(ActionRow {
-            components: vec![back_button, forward_button],
+            components: vec![back_button, select_button, forward_button],
         })])
         .embeds([embed])
         .build())
+}
+
+pub async fn process_modal_submit(
+    data: ModalInteractionData,
+    guild_id: Id<GuildMarker>,
+    state: AppState,
+) -> Result<InteractionResponse, Error> {
+    let actions = data.components.get(0).ok_or(Error::NoModalActionRow)?;
+    let field = actions.components.get(0).ok_or(Error::NoFormField)?;
+    let offset: i64 = field
+        .value
+        .as_ref()
+        .ok_or(Error::NoDestinationInComponent)?
+        .parse()?;
+    Ok(InteractionResponse {
+        kind: InteractionResponseType::UpdateMessage,
+        data: Some(gen_leaderboard(guild_id, state.db, offset).await?),
+    })
 }
 
 pub async fn process_message_component(
@@ -112,6 +141,30 @@ pub async fn process_message_component(
     guild_id: Id<GuildMarker>,
     state: AppState,
 ) -> Result<InteractionResponse, Error> {
+    if data.custom_id == "jump_modal" {
+        let input = TextInput {
+            custom_id: "jump_modal_input".to_string(),
+            label: "jump_destination".to_string(),
+            max_length: Some(6),
+            min_length: Some(1),
+            placeholder: Some("What page to jump to".to_string()),
+            required: Some(true),
+            style: TextInputStyle::Short,
+            value: None,
+        };
+        return Ok(InteractionResponse {
+            kind: InteractionResponseType::Modal,
+            data: Some(
+                InteractionResponseDataBuilder::new()
+                    .components([Component::ActionRow(ActionRow {
+                        components: vec![Component::TextInput(input)],
+                    })])
+                    .custom_id("jump_modal")
+                    .title("Go to page..")
+                    .build(),
+            ),
+        });
+    }
     // when we create the buttons, we set next and previous's custom IDs to the current page
     // plus and minus 1. This means that we don't have to store which page which
     // message is on, because the component will tell us exactly where it wants to go!

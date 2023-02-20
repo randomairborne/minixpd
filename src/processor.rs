@@ -36,6 +36,9 @@ pub async fn process_interaction(
             InteractionData::MessageComponent(mc) => {
                 crate::leaderboard::process_message_component(mc, guild_id, state).await?
             }
+            InteractionData::ModalSubmit(ms) => {
+                crate::leaderboard::process_modal_submit(ms, guild_id, state).await?
+            }
             _ => PONG,
         };
         Ok(resp)
