@@ -176,6 +176,8 @@ pub enum Error {
     ValidateMessage(#[from] twilight_validate::message::MessageValidationError),
     #[error("Interaction parser encountered an error: {0}!")]
     Parse(#[from] twilight_interactions::error::ParseError),
+    #[error("Interaction parser encountered an error: {0}!")]
+    ImageSource(#[from] twilight_util::builder::embed::image_source::ImageSourceAttachmentError),
     #[error("SVG renderer encountered an error: {0}!")]
     ImageGenerator(#[from] crate::render_card::RenderingError),
     #[error("SQLx encountered an error: {0}")]
