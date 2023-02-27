@@ -110,7 +110,7 @@ async fn event_loop(mut shard: Shard, should_shutdown: Arc<AtomicBool>, state: A
                 tokio::spawn(async move {
                     if let Err(e) = handle_event(event, state).await {
                         // this includes even user caused errors. User beware. Don't set up automatic emails or anything.
-                        error!("Handler error: {e}");
+                        warn!("Handler error: {e}");
                     }
                 });
             }
