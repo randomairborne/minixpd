@@ -191,5 +191,19 @@
       }
     },
     "query": "SELECT id FROM role_rewards WHERE guild = $1 AND requirement <= $2 ORDER BY requirement DESC LIMIT 1"
+  },
+  "eb9235b31f157374b96af33a4b7140ff4c83dc84dab47a2997d9dadd754e4e7f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Varchar"
+        ]
+      }
+    },
+    "query": "INSERT INTO card_toy (id, guild_id, toy) VALUES ($1, $2, $3) ON CONFLICT (id, guild_id) DO UPDATE SET toy = excluded.toy"
   }
 }
