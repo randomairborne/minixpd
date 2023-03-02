@@ -89,27 +89,31 @@ impl Default for SvgState {
         let images = HashMap::from([
             (
                 "parrot.png".to_string(),
-                Arc::new(include_bytes!("resources/icons/parrot.png").to_vec()),
+                Arc::new(include_bytes!("resources/icons/CEa_TIde/parrot.png").to_vec()),
             ),
             (
                 "fox.png".to_string(),
-                Arc::new(include_bytes!("resources/icons/fox.png").to_vec()),
+                Arc::new(include_bytes!("resources/icons/CEa_TIde/fox.png").to_vec()),
             ),
             (
                 "grassblock.png".to_string(),
-                Arc::new(include_bytes!("resources/icons/grassblock.png").to_vec()),
+                Arc::new(include_bytes!("resources/icons/CEa_TIde/grassblock.png").to_vec()),
             ),
             (
                 "pickaxe.png".to_string(),
-                Arc::new(include_bytes!("resources/icons/pickaxe.png").to_vec()),
+                Arc::new(include_bytes!("resources/icons/CEa_TIde/pickaxe.png").to_vec()),
             ),
             (
                 "steveheart.png".to_string(),
-                Arc::new(include_bytes!("resources/icons/steveheart.png").to_vec()),
+                Arc::new(include_bytes!("resources/icons/CEa_TIde/steveheart.png").to_vec()),
             ),
             (
                 "tree.png".to_string(),
-                Arc::new(include_bytes!("resources/icons/tree.png").to_vec()),
+                Arc::new(include_bytes!("resources/icons/CEa_TIde/tree.png").to_vec()),
+            ),
+            (
+                "airplane.png".to_string(),
+                Arc::new(include_bytes!("resources/icons/valkyrie_pilot/airplane.png").to_vec()),
             ),
         ]);
         Self {

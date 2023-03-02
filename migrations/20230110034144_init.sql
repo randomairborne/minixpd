@@ -8,7 +8,9 @@ CREATE TABLE levels (
 
 CREATE TABLE card_toy (
     toy VARCHAR(64) NOT NULL,
-    id BIGINT PRIMARY KEY
+    id BIGINT NOT NULL,
+    guild_id BIGINT NOT NULL,
+    PRIMARY KEY (id, guild_id)
 );
 
 CREATE TABLE role_rewards (

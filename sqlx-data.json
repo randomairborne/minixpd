@@ -138,6 +138,20 @@
     },
     "query": "SELECT toy FROM card_toy WHERE id = $1"
   },
+  "ba6f5d767e4d166d0432d05bbd81ce16a238aec61ac8870736b3e01a0776017c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Varchar"
+        ]
+      }
+    },
+    "query": "INSERT INTO card_toy(id, guild_id, toy) VALUES ($1, $2, $3)"
+  },
   "c5ebbff1c0cde2c984f797f0b6ee9510cf3683a4642771648c03855387cf7163": {
     "describe": {
       "columns": [
