@@ -43,9 +43,9 @@ jobs:
 
       - name: Build executables
         env:
-          TARGET_CC: ${{ github.workspace }}/${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-cc
-          TARGET_AR: ${{ github.workspace }}/${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-ar
-          RUSTFLAGS: -C linker=${{ github.workspace }}/${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-cc
+          TARGET_CC: ${{ github.workspace }}/${{ matrix.arch }}-linux-musl-cross/bin/${{ matrix.arch }}-linux-musl-cc
+          TARGET_AR: ${{ github.workspace }}/${{ matrix.arch }}-linux-musl-cross/bin/${{ matrix.arch }}-linux-musl-ar
+          RUSTFLAGS: -C linker=${{ github.workspace }}/${{ matrix.arch }}-linux-musl-cross/bin/${{ matrix.arch }}-linux-musl-cc
         run: cargo b --release --target ${{ matrix.arch }}-unknown-linux-musl
 
       - name: Upload executables
