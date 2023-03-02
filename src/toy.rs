@@ -58,7 +58,7 @@ pub async fn modify(
     }
     #[allow(clippy::cast_possible_wrap)]
     query!(
-        "INSERT INTO card_toy(id, guild_id, toy) VALUES ($1, $2, $3)",
+        "INSERT INTO card_toy (id, guild_id, toy) VALUES ($1, $2, $3) ON CONFLICT (id, guild_id) DO UPDATE SET toy = excluded.toy",
         invoker.id.get() as i64,
         guild_id.get() as i64,
         toy.value()
