@@ -1,6 +1,5 @@
-ARG ARCH=
 FROM alpine
 
-COPY /${ARCH}-executables/minixpd /usr/bin/
+COPY /${TARGETARCH}-executables/minixpd /usr/bin/
 
 ENTRYPOINT "/usr/bin/minixpd"

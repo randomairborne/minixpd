@@ -69,13 +69,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: aarch64-executables
-          path: aarch64-executables
+          path: arm64-executables
 
       - name: Download x86 executables
         uses: actions/download-artifact@v3
         with:
           name: x86_64-executables
-          path: x86_64-executables
+          path: amd64-executables
 
       - name: chmod +x
         run: chmod +x ./*executables/*
@@ -96,4 +96,4 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ env.REPO }}:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64,linux/amd64
