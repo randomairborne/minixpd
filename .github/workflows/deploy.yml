@@ -35,8 +35,11 @@ jobs:
       - name: Cache rust
         uses: Swatinem/rust-cache@v2
 
-      - name: Install musl-dev
+      - name: Download musl development toolchain
         run: curl -fsSl https://musl.cc/${{ matrix.arch }}-linux-musl-cross.tgz --output ${{ matrix.arch }}-linux-musl-cross.tgz
+
+      - name: Set up musl development toolchain
+        run: tar -xvf ./${{ matrix.arch }}-linux-musl-cross.tgz
 
       - name: Build executables
         env:
