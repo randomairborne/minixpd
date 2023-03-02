@@ -40,7 +40,8 @@ jobs:
 
       - name: Build executables
         env:
-          RUSTFLAGS: -C linker=./${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-cc
+          TARGET_CC: ./${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-cc
+          TARGET_AR: ./${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-ar
         run: cargo b --release --target ${{ matrix.arch }}-unknown-linux-musl
 
       - name: Upload executables
