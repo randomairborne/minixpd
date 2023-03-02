@@ -30,25 +30,25 @@ jobs:
       - name: Install cargo
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: {{ matrix.arch }}-unknown-linux-musl
+          targets: ${{ matrix.arch }}-unknown-linux-musl
 
       - name: Cache rust
         uses: Swatinem/rust-cache@v2
 
       - name: Install musl-dev
-        run: curl -fsSl https://musl.cc/{{ matrix.arch }}-linux-musl-cross.tgz --output {{ matrix.arch }}-linux-musl-cross.tgz
+        run: curl -fsSl https://musl.cc/${{ matrix.arch }}-linux-musl-cross.tgz --output ${{ matrix.arch }}-linux-musl-cross.tgz
 
       - name: Build executables
         env:
-          RUSTFLAGS: -C linker=./{{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-cc
-        run: cargo b --release --target {{ matrix.arch }}-unknown-linux-musl
+          RUSTFLAGS: -C linker=./${{ matrix.arch }}-linux-musl-cross/bin/aarch64-linux-musl-cc
+        run: cargo b --release --target ${{ matrix.arch }}-unknown-linux-musl
 
       - name: Upload executables
         uses: actions/upload-artifact@v3
         with:
-          name: {{ matrix.arch }}-executables
+          name: ${{ matrix.arch }}-executables
           path: |
-            target/{{ matrix.arch }}-unknown-linux-musl/release/minixpd
+            target/${{ matrix.arch }}-unknown-linux-musl/release/minixpd
 
   deploy:
     runs-on: ubuntu-latest
