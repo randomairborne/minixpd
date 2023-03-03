@@ -1,5 +1,6 @@
 use crate::{AppState, Error};
 
+use base64::Engine;
 use twilight_model::{
     http::{
         attachment::Attachment,
@@ -8,10 +9,7 @@ use twilight_model::{
     id::{marker::GuildMarker, Id},
     user::User,
 };
-use twilight_util::builder::{
-    embed::{EmbedBuilder, ImageSource},
-    InteractionResponseDataBuilder,
-};
+use twilight_util::builder::{embed::EmbedBuilder, InteractionResponseDataBuilder};
 
 pub async fn get_level(
     guild_id: Id<GuildMarker>,
@@ -118,7 +116,12 @@ async fn add_card(
     .fetch_optional(&state.db)
     .await?
     .map(|v| v.toy);
-    #[allow(clippy::cast_precision_loss)]
+    let avatar = get_avatar(&state, &user).await?;
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     let png = crate::render_card::render(
         state.svg.clone(),
         crate::render_card::Context {
@@ -126,24 +129,14 @@ async fn add_card(
             rank,
             name: user.name.clone(),
             discriminator: user.discriminator().to_string(),
-            percentage: get_percentage_bar_as_pixels(level_info.percentage()),
+            percentage: (level_info.percentage() * 100.0).round() as u64,
             current: level_info.xp(),
             needed: mee6::xp_needed_for_level(level_info.level() + 1),
             toy,
+            avatar,
         },
     )
     .await?;
-    let embed = EmbedBuilder::new()
-        .description(format!(
-            "<@!{}> is level {} (rank #{}), and is {}% of the way to level {}.",
-            user.id,
-            level_info.level(),
-            rank,
-            (level_info.percentage() * 100.0).round(),
-            level_info.level() + 1
-        ))
-        .image(ImageSource::attachment("card.png")?)
-        .build();
     let card = Attachment {
         description: Some(format!(
             "{}#{} is level {} (rank #{}), and is {}% of the way to level {}.",
@@ -160,13 +153,33 @@ async fn add_card(
     };
     interaction_client
         .create_followup(token)
-        .embeds(&[embed])?
         .attachments(&[card])?
         .await?;
     Ok(())
 }
 
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-pub fn get_percentage_bar_as_pixels(percentage: f64) -> u64 {
-    percentage.mul_add(700.0, 40.0) as u64
+async fn get_avatar(state: &AppState, user: &User) -> Result<String, Error> {
+    let url = user.avatar.map_or_else(
+        || {
+            format!(
+                "https://cdn.discordapp.com/embed/avatars/{}/{}.png",
+                user.id,
+                user.discriminator % 5
+            )
+        },
+        |hash| {
+            format!(
+                "https://cdn.discordapp.com/avatars/{}/{}.png",
+                user.id, hash
+            )
+        },
+    );
+    let png = state.http.get(url).send().await?.bytes().await?;
+    let data = format!("data:image/png;base64,{}", BASE64_ENGINE.encode(png));
+    Ok(data)
 }
+
+const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::GeneralPurpose::new(
+    &base64::alphabet::STANDARD,
+    base64::engine::general_purpose::NO_PAD,
+);

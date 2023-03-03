@@ -15,6 +15,7 @@ pub struct Context {
     pub current: u64,
     pub needed: u64,
     pub toy: Option<String>,
+    pub avatar: String,
 }
 
 // the render can take a while, so this is a relatively thin function
@@ -26,9 +27,9 @@ pub async fn render(state: SvgState, context: Context) -> Result<Vec<u8>, Render
 fn do_render(state: &SvgState, context: &tera::Context) -> Result<Vec<u8>, RenderingError> {
     // this actually just does the templating, which has pretty much all been set up already.
     let svg = state.tera.render("svg", context)?;
-    // the data resolver is not used, but is here in case we support user PFPs in the future
+    // the data resolver is used to support user PFPs
     let resolve_data = Box::new(
-        |mime: &str, data: std::sync::Arc<Vec<u8>>, _: &resvg::usvg::Options| match mime {
+        |mime: &str, data: std::sync::Arc<Vec<u8>>, _opt: &resvg::usvg::Options| match mime {
             "image/png" => Some(ImageKind::PNG(data)),
             "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
             _ => None,
@@ -147,8 +148,6 @@ pub enum RenderingError {
 mod tests {
     use rand::Rng;
 
-    use crate::levels::get_percentage_bar_as_pixels;
-
     use super::*;
 
     #[test]
@@ -166,10 +165,11 @@ mod tests {
             rank: rand::thread_rng().gen_range(0..=1_000_000),
             name: "Testy McTestington<span>".to_string(),
             discriminator: "0000".to_string(),
-            percentage: get_percentage_bar_as_pixels(data.percentage()),
+            percentage: (data.percentage() * 100.0).round() as u64,
             current: xp,
             needed: mee6::xp_needed_for_level(data.level() + 1),
             toy: Some("parrot.png".to_string()),
+            avatar: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEABAMAAACuXLVVAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAYUExURXG0zgAAAFdXV6ampoaGhr6zpHxfQ2VPOt35dJcAAAABYktHRAH/Ai3eAAAAB3RJTUUH5wMDFSE5W/eo1AAAAQtJREFUeNrt1NENgjAUQFFXYAVWYAVXcAVXYH0hoQlpSqGY2Dae82WE9971x8cDAAAAAAAAAAAAAAAAAADgR4aNAAEC/jNgPTwuBAgQ8J8B69FpI0CAgL4DhozczLgjQICAPgPCkSkjtXg/I0CAgD4Dzg4PJ8YEAQIE9BEQLyg5cEWYFyBAQHsBVxcPN8U7BAgQ0FbAlcNhcLohjkn+egECBFQPKPE8cXpQgAABzQXkwsIfUElwblaAAAF9BeyP3Z396rgAAQJ+EvCqTIAAAfUD3pUJECCgvYB5kfp89N28yR3J7RQgQED9gPjhfmG8/Oh56r1UYOpdAQIEtBFwtLBUyY7wrgABAqoHfABW2cbX3ElRgQAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMy0wMy0wM1QyMTozMzo1NiswMDowMNpnAp0AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjMtMDMtMDNUMjE6MzM6NTYrMDA6MDCrOrohAAAAKHRFWHRkYXRlOnRpbWVzdGFtcAAyMDIzLTAzLTAzVDIxOjMzOjU3KzAwOjAwWliQSgAAAABJRU5ErkJggg==".to_string(),
         };
         let output = do_render(&state, &tera::Context::from_serialize(context)?)?;
         std::fs::write("renderer_test.png", output).unwrap();

@@ -69,6 +69,7 @@ async fn main() {
             .collect();
     let senders: Vec<twilight_gateway::MessageSender> =
         shards.iter().map(twilight_gateway::Shard::sender).collect();
+    let http = reqwest::Client::new();
     info!("Connecting to discord");
     let state = AppState {
         db,
@@ -76,6 +77,7 @@ async fn main() {
         my_id,
         cooldowns,
         svg,
+        http,
     };
     let should_shutdown = Arc::new(AtomicBool::new(false));
 
@@ -140,6 +142,7 @@ pub struct AppState {
     pub my_id: Id<ApplicationMarker>,
     pub cooldowns: minicache::MessagingCache,
     pub svg: SvgState,
+    pub http: reqwest::Client,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -183,5 +186,7 @@ pub enum Error {
     #[error("SQLx encountered an error: {0}")]
     Sqlx(#[from] sqlx::Error),
     #[error("Twilight-HTTP encountered an error: {0}")]
-    Http(#[from] twilight_http::Error),
+    TwilightHttp(#[from] twilight_http::Error),
+    #[error("Reqwest encountered an error: {0}")]
+    ReqwestHttp(#[from] reqwest::Error),
 }
