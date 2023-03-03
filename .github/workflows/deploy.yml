@@ -21,7 +21,7 @@ jobs:
     needs: [check]
     strategy:
       fail-fast: true
-      matrix: 
+      matrix:
         arch: [aarch64, x86_64]
     steps:
       - name: Check out code into the proper directory
@@ -35,10 +35,10 @@ jobs:
       - name: Cache rust
         uses: Swatinem/rust-cache@v2
 
-      - name: Download musl development toolchain
+      - name: Download musl development toolchain for ${{ matrix.arch }}
         run: curl -fsSl https://musl.cc/${{ matrix.arch }}-linux-musl-cross.tgz --output ${{ matrix.arch }}-linux-musl-cross.tgz
 
-      - name: Set up musl development toolchain
+      - name: Set up musl-${{ matrix.arch }} development toolchain
         run: tar -xvf ./${{ matrix.arch }}-linux-musl-cross.tgz
 
       - name: Build executables
