@@ -60,7 +60,7 @@
     <tspan class="stat-name level">LEVEL:</tspan>
     <tspan class="stat level">&#160;{{ level }}</tspan>
   </text>
-  <text x="{% if xp_at_end %}760{% else %}40{% endif %}" y="155" text-anchor="{% if xp_at_end %}end{% else %}start{% endif %}">
+  <text x="{% if xp_at_end %}760{% else %}40{% endif %}" y="157" text-anchor="{% if xp_at_end %}end{% else %}start{% endif %}">
     <tspan class="current">{{ current }}</tspan>
     <tspan class="needed">&#160;/&#160;{{ needed }} xp</tspan>
   </text>
