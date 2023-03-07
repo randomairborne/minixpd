@@ -10,7 +10,7 @@ use crate::{AppState, Error};
 pub async fn handle(interaction: Interaction, state: AppState) -> Result<(), Error> {
     let interaction_token = interaction.token.clone();
     let interaction_id = interaction.id;
-    let response = match crate::processor::process_interaction(interaction, state.clone()).await {
+    let response = match crate::dispatch::process_interaction(interaction, state.clone()).await {
         Ok(val) => val,
         Err(e) => {
             // this often produces errors that are not bugs. Thus, warn rather then error.

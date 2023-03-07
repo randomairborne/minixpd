@@ -9,7 +9,7 @@ MiniXPD is a single docker container. It requires two environment variables: a P
 You can run it like so:
 
 ```bash
-docker run -e DISCORD_TOKEN=a.b.c DATABASE_URL=postgres://username:password@address/database
+docker run -e DISCORD_TOKEN=a.b.c -e DATABASE_URL=postgres://username:password@address/database
 ```
 
 Note that the address must be absolute, as docker does weird things with localhost networking.

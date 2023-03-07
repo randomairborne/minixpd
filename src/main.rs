@@ -6,7 +6,7 @@ mod leaderboard;
 mod levels;
 mod message;
 mod minicache;
-mod processor;
+mod dispatch;
 mod render_card;
 mod toy;
 
