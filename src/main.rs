@@ -1,12 +1,12 @@
 #![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 
 mod cmd_defs;
+mod dispatch;
 mod handler;
 mod leaderboard;
 mod levels;
 mod message;
 mod minicache;
-mod dispatch;
 mod render_card;
 mod toy;
 
