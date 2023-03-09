@@ -1,5 +1,8 @@
 use rand::Rng;
-use twilight_model::{gateway::payload::incoming::MessageCreate, id::Id};
+use twilight_model::{
+    gateway::payload::incoming::MessageCreate,
+    id::{marker::RoleMarker, Id},
+};
 
 use crate::AppState;
 
@@ -28,15 +31,17 @@ pub async fn save(msg: MessageCreate, state: AppState) -> Result<(), crate::Erro
     #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
     let reward = query!("SELECT id FROM role_rewards WHERE guild = $1 AND requirement <= $2 ORDER BY requirement DESC LIMIT 1", guild_id.get() as i64, level_info.level() as i64)
         .fetch_optional(&state.db)
-        .await?;
+        .await?.map(|v| Id::<RoleMarker>::new(v.id as u64));
     if let Some(reward) = reward {
-        #[allow(clippy::cast_sign_loss)]
-        let id = reward.id as u64;
+        if let Some(member) = &msg.member {
+            if member.roles.contains(&reward) {
+                return Ok(());
+            }
+        }
         state
             .client
-            .add_guild_member_role(guild_id, msg.author.id, Id::new(id))
+            .add_guild_member_role(guild_id, msg.author.id, reward)
             .await?;
     }
-
     Ok(())
 }
