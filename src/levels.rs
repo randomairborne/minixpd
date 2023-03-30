@@ -122,9 +122,9 @@ async fn add_card(
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation
     )]
-    let png = crate::render_card::render(
-        state.svg.clone(),
-        crate::render_card::Context {
+    let png = state
+        .svg
+        .render(xpd_rank_card::Context {
             level: level_info.level(),
             rank,
             name: user.name.clone(),
@@ -134,9 +134,10 @@ async fn add_card(
             needed: mee6::xp_needed_for_level(level_info.level() + 1),
             toy,
             avatar,
-        },
-    )
-    .await?;
+            font: "Mojang".to_string(),
+            colors: xpd_rank_card::colors::Colors::default(),
+        })
+        .await?;
     let card = Attachment {
         description: Some(format!(
             "{}#{} is level {} (rank #{}), and is {}% of the way to level {}.",

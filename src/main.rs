@@ -7,16 +7,15 @@ mod leaderboard;
 mod levels;
 mod message;
 mod minicache;
-mod render_card;
 mod toy;
 
-use render_card::SvgState;
 use sqlx::PgPool;
 use std::sync::{atomic::AtomicBool, Arc};
 use tokio::task::JoinSet;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use twilight_gateway::{CloseFrame, Config, Event, Intents, Shard};
 use twilight_model::id::{marker::ApplicationMarker, Id};
+use xpd_rank_card::SvgState;
 
 #[macro_use]
 extern crate tracing;
@@ -182,7 +181,7 @@ pub enum Error {
     #[error("Interaction parser encountered an error: {0}!")]
     ImageSource(#[from] twilight_util::builder::embed::image_source::ImageSourceAttachmentError),
     #[error("SVG renderer encountered an error: {0}!")]
-    ImageGenerator(#[from] crate::render_card::RenderingError),
+    ImageGenerator(#[from] xpd_rank_card::Error),
     #[error("SQLx encountered an error: {0}")]
     Sqlx(#[from] sqlx::Error),
     #[error("Twilight-HTTP encountered an error: {0}")]
