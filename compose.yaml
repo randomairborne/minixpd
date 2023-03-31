@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  bot:
+    image: ghcr.io/randomairborne/minixpd:latest
+    networks:
+      - database
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_PUBKEY: ${DISCORD_PUBKEY}
+      DATABASE_URL: "postgres://minixpd:minixpd@database/minixpd"
+
+  database:
+    image: postgres:alpine
+    volumes:
+        - data:/var/lib/mysql/
+    networks:
+      - database
+    environment:
+      POSTGRES_DB: minixpd
+      POSTGRES_USER: minixpd
+      POSTGRES_PASSWORD: minixpd
+
+networks:
+  database: {}
+
+volumes:
+  data: {}
