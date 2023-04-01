@@ -73,21 +73,42 @@ pub async fn modify(
 
 #[derive(Clone, Copy, Debug, CreateOption, CommandOption)]
 pub enum Toy {
+    #[option(name = "None", value = "None")]
+    None,
+    #[option(name = "Airplane", value = "airplane.png")]
+    Airplane,
+    #[option(name = "Bee", value = "bee.png")]
+    Bee,
+    #[option(name = "Biscuit", value = "biscuit.png")]
+    Biscuit,
+    #[option(name = "Chicken", value = "chicken.png")]
+    Chicken,
+    #[option(name = "Cow", value = "cow.png")]
+    Cow,
     #[option(name = "Fox", value = "fox.png")]
     Fox,
-    #[option(name = "Parrot", value = "parrot.png")]
-    Parrot,
     #[option(name = "Grass Block", value = "grassblock.png")]
     GrassBlock,
+    #[option(name = "Parrot", value = "parrot.png")]
+    Parrot,
     #[option(name = "Pickaxe", value = "pickaxe.png")]
     Pickaxe,
-    #[option(name = "Steve heart", value = "steveheart.png")]
+    #[option(name = "Pig", value = "pig.png")]
+    Pig,
+    #[option(name = "Blue Potion", value = "potion_blue.png")]
+    PotionBlue,
+    #[option(name = "Purple Potion", value = "potion_purple.png")]
+    PotionPurple,
+    #[option(name = "Red Potion", value = "potion_red.png")]
+    PotionRed,
+    #[option(name = "Sheep", value = "sheep.png")]
+    Sheep,
+    #[option(name = "Steve Hug", value = "steveheart.png")]
     SteveHeart,
     #[option(name = "Tree", value = "tree.png")]
     Tree,
-    #[option(name = "Airplane", value = "airplane.png")]
-    Airplane,
 }
+
 
 impl Toy {
     pub const fn level_requirement(self) -> Option<u64> {
@@ -111,13 +132,23 @@ impl Toy {
 impl Display for Toy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
-            Self::Fox => "Fox",
-            Self::Parrot => "Parrot",
-            Self::GrassBlock => "Grass block",
-            Self::Pickaxe => "Pickaxe",
-            Self::SteveHeart => "Steve heart",
-            Self::Tree => "Tree",
+            Self::None => "None",
             Self::Airplane => "Airplane",
+            Self::Bee => "Bee",
+            Self::Biscuit => "Biscuit",
+            Self::Chicken => "Chicken",
+            Self::Cow => "Cow",
+            Self::Fox => "Fox",
+            Self::GrassBlock => "Grass Block",
+            Self::Parrot => "Parrot",
+            Self::Pickaxe => "Pickaxe",
+            Self::Pig => "Pig",
+            Self::PotionBlue => "Blue Potion",
+            Self::PotionPurple => "Purple Potion",
+            Self::PotionRed => "Red Potion",
+            Self::Sheep => "Sheep",
+            Self::SteveHeart => "Steve Hug",
+            Self::Tree => "Tree",
         };
         f.write_str(text)
     }

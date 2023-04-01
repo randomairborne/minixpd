@@ -20,6 +20,7 @@ twilight-util = { version = "0.15", features = ["builder"] }
 serde = { version = "1", features = ["derive"] }
 twilight-interactions = "0.15"
 twilight-validate = "0.15"
+xpd-rank-card = "0.0.3"
 twilight-model = "0.15"
 twilight-http = "0.15"
 parking_lot = "0.12"
@@ -34,4 +35,3 @@ png = "0.17"
 rand = "0.8"
 mee6 = "0.1"
 tera = "1"
-xpd-rank-card = "0.0.2"
