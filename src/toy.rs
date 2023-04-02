@@ -109,7 +109,6 @@ pub enum Toy {
     Tree,
 }
 
-
 impl Toy {
     pub const fn level_requirement(self) -> Option<u64> {
         match self {
