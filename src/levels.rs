@@ -115,7 +115,7 @@ async fn add_card(
     )
     .fetch_optional(&state.db)
     .await?
-    .map(|v| v.toy);
+    .and_then(|v| xpd_rank_card::Toy::from_filename(&v.toy));
     let avatar = get_avatar(&state, &user).await?;
     #[allow(
         clippy::cast_precision_loss,
@@ -134,7 +134,7 @@ async fn add_card(
             needed: mee6::xp_needed_for_level(level_info.level() + 1),
             toy,
             avatar,
-            font: "Mojang".to_string(),
+            font: xpd_rank_card::Font::Mojang,
             colors: xpd_rank_card::colors::Colors::default(),
         })
         .await?;
