@@ -19,7 +19,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 twilight-util = { version = "0.15", features = ["builder"] }
 twilight-interactions = "0.15"
 twilight-validate = "0.15"
-xpd-rank-card = "0.0.4"
+xpd-rank-card = "0.0.5"
 twilight-model = "0.15"
 twilight-http = "0.15"
 parking_lot = "0.12"
