@@ -122,13 +122,19 @@ async fn add_card(
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation
     )]
+    let discriminator = if user.discriminator == 0 {
+        None
+    } else {
+        Some(user.discriminator().to_string())
+    };
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let png = state
         .svg
         .render(xpd_rank_card::Context {
             level: level_info.level(),
             rank,
             name: user.name.clone(),
-            discriminator: user.discriminator().to_string(),
+            discriminator,
             percentage: (level_info.percentage() * 100.0).round() as u64,
             current: level_info.xp(),
             needed: mee6::xp_needed_for_level(level_info.level() + 1),

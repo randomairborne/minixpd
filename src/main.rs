@@ -129,7 +129,7 @@ async fn event_loop(mut shard: Shard, should_shutdown: Arc<AtomicBool>, state: A
 async fn handle_event(event: Event, state: AppState) -> Result<(), Error> {
     match event {
         Event::MessageCreate(msg) => message::save(*msg, state).await,
-        Event::InteractionCreate(i) => handler::handle(i.0, state).await,
+        Event::InteractionCreate(i) => Box::pin(handler::handle(i.0, state)).await,
         _ => Ok(()),
     }
 }
