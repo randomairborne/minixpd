@@ -2,7 +2,7 @@
 
 # !!!!! minixpd IS UNMAINTAINED !!!!!
 
-the xpd-lite container and crate on [randomairborne/experienced](https://github.com/randomairborne/experienced/) has replaced its functionality.
+### the xpd-lite container and crate on [randomairborne/experienced](https://github.com/randomairborne/experienced/) has replaced its functionality.
 
 minixpd (stylized in all lowercase) is a simple Discord bot forked from [randomairborne/experienced](https://github.com/randomairborne/experienced/)
 with the purpose of being an easy-to-host bot for leveling.
