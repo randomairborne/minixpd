@@ -2,9 +2,9 @@
 
 # !!!!! minixpd IS UNMAINTAINED !!!!!
 
-the xpd-lite container and crate on [randomairborne/experienced](/randomairborne/experienced/) has replaced its functionality.
+the xpd-lite container and crate on [randomairborne/experienced](https://github.com/randomairborne/experienced/) has replaced its functionality.
 
-minixpd (stylized in all lowercase) is a simple Discord bot forked from [randomairborne/experienced](/randomairborne/experienced/)
+minixpd (stylized in all lowercase) is a simple Discord bot forked from [randomairborne/experienced](https://github.com/randomairborne/experienced/)
 with the purpose of being an easy-to-host bot for leveling.
 
 The easisest way to self-host minixpd is with Docker on Linux. Thus, this is how this tutorial will set up minixpd.
